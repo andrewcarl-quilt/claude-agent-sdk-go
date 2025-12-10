@@ -606,6 +606,35 @@ func (q *Query) sendControlRequest(ctx context.Context, request map[string]inter
 	}
 }
 
+// SetPermissionMode sends a set_permission_mode control request to the CLI.
+//
+// This method sends the control request and waits for acknowledgment from the CLI.
+// It uses the existing sendControlRequest infrastructure for proper request tracking
+// and response handling.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout control
+//   - mode: The permission mode string ("default", "acceptEdits", "plan", "bypassPermissions")
+//
+// Returns an error if:
+//   - The CLI rejects the mode change
+//   - The context is cancelled or times out
+//   - The control request fails to send
+func (q *Query) SetPermissionMode(ctx context.Context, mode string) error {
+	request := map[string]interface{}{
+		"subtype": "set_permission_mode",
+		"mode":    mode,
+	}
+
+	_, err := q.sendControlRequest(ctx, request)
+	if err != nil {
+		return types.NewControlProtocolErrorWithCause("failed to set permission mode", err)
+	}
+
+	q.logger.Debug("Successfully set permission mode to: %s", mode)
+	return nil
+}
+
 // sendSuccessResponse sends a success control response.
 func (q *Query) sendSuccessResponse(requestID string, response map[string]interface{}) {
 	controlResponse := map[string]interface{}{
