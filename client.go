@@ -656,3 +656,98 @@ func (c *Client) RewindFiles(ctx context.Context, userMessageID string) error {
 	})
 	return err
 }
+
+// SetPermissionMode changes the permission mode for the current session.
+//
+// This method allows dynamically switching between permission modes during execution
+// without recreating the session. It waits for acknowledgment from the CLI before
+// returning, ensuring the mode change has taken effect.
+//
+// Permission Modes:
+//   - "default": Standard permission behavior with prompts for all operations
+//   - "acceptEdits": Automatically accept file edit operations (fast coding workflow)
+//   - "plan": Planning mode - Claude asks permission before making changes
+//   - "bypassPermissions": Bypass all permission checks (use with caution)
+//
+// The mode change applies immediately to all subsequent operations. Previous operations
+// that are already in progress are not affected.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout control. Use context.WithTimeout()
+//          to prevent indefinite blocking if the CLI doesn't respond.
+//   - mode: The permission mode to set (use types.PermissionMode constants)
+//
+// Returns an error if:
+//   - Not connected (call Connect() first)
+//   - Invalid mode value
+//   - CLI rejects the mode change
+//   - Context is cancelled or times out
+//
+// Thread Safety:
+//   - This method is thread-safe and can be called concurrently with other Client methods
+//   - However, the Client is not generally thread-safe - see Client documentation
+//
+// Example - Toggle between planning and coding:
+//
+//	ctx := context.Background()
+//
+//	// Start in planning mode
+//	if err := client.SetPermissionMode(ctx, types.PermissionModePlan); err != nil {
+//	    log.Fatal("Failed to set plan mode:", err)
+//	}
+//
+//	// Review changes
+//	if err := client.Query(ctx, "What changes would you make to optimize performance?"); err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Switch to acceptEdits for fast implementation
+//	if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
+//	    log.Fatal("Failed to set acceptEdits mode:", err)
+//	}
+//
+//	// Execute the changes
+//	if err := client.Query(ctx, "Implement those optimizations now"); err != nil {
+//	    log.Fatal(err)
+//	}
+//
+// Example - With timeout:
+//
+//	// Set timeout to prevent hanging
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer cancel()
+//
+//	if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
+//	    if errors.Is(err, context.DeadlineExceeded) {
+//	        log.Fatal("CLI took too long to respond")
+//	    }
+//	    log.Fatal("Failed to change mode:", err)
+//	}
+func (c *Client) SetPermissionMode(ctx context.Context, mode types.PermissionMode) error {
+	c.mu.Lock()
+	if !c.connected || c.query == nil {
+		c.mu.Unlock()
+		return types.NewCLIConnectionError("not connected - call Connect() first")
+	}
+	query := c.query
+	c.mu.Unlock()
+
+	// Validate mode
+	switch mode {
+	case types.PermissionModeDefault,
+		types.PermissionModeAcceptEdits,
+		types.PermissionModePlan,
+		types.PermissionModeBypassPermissions:
+		// Valid mode
+	default:
+		return fmt.Errorf("invalid permission mode: %s (must be one of: default, acceptEdits, plan, bypassPermissions)", mode)
+	}
+
+	// Send control request and wait for acknowledgment
+	if err := query.SetPermissionMode(ctx, string(mode)); err != nil {
+		return err
+	}
+
+	c.logger.Info("Permission mode changed to: %s", mode)
+	return nil
+}
