@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -110,6 +111,9 @@ func (t *SubprocessCLITransport) Connect(ctx context.Context) error {
 	// Set up environment variables
 	// Start with current environment
 	t.cmd.Env = os.Environ()
+
+	// Enhance PATH with common tool locations if not already present
+	t.enhancePathEnvironment()
 
 	// Add SDK-specific variables
 	t.cmd.Env = append(t.cmd.Env, "CLAUDE_CODE_ENTRYPOINT=agent")
@@ -375,6 +379,73 @@ func (t *SubprocessCLITransport) buildCommandArgs() []string {
 	}
 
 	return args
+}
+
+// enhancePathEnvironment adds common tool directories to PATH if not already present.
+// This ensures subprocess has access to tools like homebrew packages on macOS and common
+// Linux installation directories that may not be in the parent process's PATH.
+// If PATH is set via options (t.env["PATH"]), user paths are prepended, then auto-enhancement is skipped.
+func (t *SubprocessCLITransport) enhancePathEnvironment() {
+	currentPath := os.Getenv("PATH")
+
+	// Check if PATH was explicitly set via options
+	if customPath, hasCustomPath := t.env["PATH"]; hasCustomPath {
+		// Merge custom PATH with system PATH if custom path doesn't look complete
+		// (i.e., if it's just additional dirs, not a full PATH replacement)
+		if customPath != "" && currentPath != "" {
+			// Append system PATH to custom PATH to avoid losing system tools
+			mergedPath := customPath + ":" + currentPath
+			t.env["PATH"] = mergedPath
+			t.logger.Debug("Merged custom PATH with system PATH: %s", mergedPath)
+		} else {
+			t.logger.Debug("Using custom PATH from options: %s", customPath)
+		}
+		return
+	}
+
+	if currentPath == "" {
+		t.logger.Debug("PATH environment variable is empty, skipping enhancement")
+		return
+	}
+
+	var additionalPaths []string
+
+	switch runtime.GOOS {
+	case "darwin":
+		// macOS-specific paths for homebrew and common tool locations
+		darwinPaths := []string{
+			"/opt/homebrew/bin",
+			"/opt/homebrew/sbin",
+			"/usr/local/bin",
+			"/usr/local/sbin",
+		}
+		for _, path := range darwinPaths {
+			if !strings.Contains(currentPath, path) {
+				additionalPaths = append(additionalPaths, path)
+			}
+		}
+
+	case "linux":
+		// Linux-specific common tool locations
+		linuxPaths := []string{
+			"/usr/local/bin",
+			"/usr/local/sbin",
+			"~/.local/bin",
+		}
+		for _, path := range linuxPaths {
+			if !strings.Contains(currentPath, path) {
+				additionalPaths = append(additionalPaths, path)
+			}
+		}
+	}
+
+	if len(additionalPaths) > 0 {
+		newPath := strings.Join(additionalPaths, ":") + ":" + currentPath
+		t.cmd.Env = append(t.cmd.Env, "PATH="+newPath)
+		t.logger.Debug("Enhanced PATH with additional directories: %v", additionalPaths)
+	} else {
+		t.logger.Debug("PATH already contains common tool directories")
+	}
 }
 
 // generateMcpConfigFile generates a temporary MCP configuration file for external MCP servers.

@@ -321,6 +321,32 @@ func (o *ClaudeAgentOptions) WithEnvVar(key, value string) *ClaudeAgentOptions {
 	return o
 }
 
+// WithPathExtension adds additional directories to the PATH environment variable.
+// Directories are prepended to the existing PATH. Multiple calls append to the list.
+// Example: WithPathExtension("/custom/bin", "/opt/tools/bin")
+func (o *ClaudeAgentOptions) WithPathExtension(paths ...string) *ClaudeAgentOptions {
+	if o.Env == nil {
+		o.Env = make(map[string]string)
+	}
+
+	currentPath := o.Env["PATH"]
+	if currentPath == "" {
+		// If PATH not yet set in options, we'll prepend to system PATH at runtime
+		currentPath = ""
+	}
+
+	for i := len(paths) - 1; i >= 0; i-- {
+		if currentPath == "" {
+			currentPath = paths[i]
+		} else {
+			currentPath = paths[i] + ":" + currentPath
+		}
+	}
+
+	o.Env["PATH"] = currentPath
+	return o
+}
+
 // WithExtraArgs sets extra CLI arguments.
 func (o *ClaudeAgentOptions) WithExtraArgs(args map[string]*string) *ClaudeAgentOptions {
 	o.ExtraArgs = args
