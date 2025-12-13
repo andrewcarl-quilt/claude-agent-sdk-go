@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 const (

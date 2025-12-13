@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // ParseMessage parses a JSON byte slice into a typed Message.

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	claude "github.com/M1n9X/claude-agent-sdk-go"
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	claude "github.com/andrewcarl-quilt/claude-agent-sdk-go"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // StreamingModeConversation demonstrates multi-turn conversation patterns using goroutines

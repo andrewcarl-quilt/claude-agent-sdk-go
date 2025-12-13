@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // MockCLI represents a mock Claude CLI subprocess for testing.

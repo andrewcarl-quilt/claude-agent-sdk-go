@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/M1n9X/claude-agent-sdk-go/internal/mcp"
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal/mcp"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // MCPServerTransport wraps a transport with MCP server support.

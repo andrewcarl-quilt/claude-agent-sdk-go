@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/M1n9X/claude-agent-sdk-go/internal"
-	"github.com/M1n9X/claude-agent-sdk-go/internal/log"
-	"github.com/M1n9X/claude-agent-sdk-go/internal/transport"
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal/log"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal/transport"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // Query executes a single Claude query in non-streaming mode and returns a channel of messages.

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // TypeSafeAccessors demonstrates how to use the new type-safe message accessors
