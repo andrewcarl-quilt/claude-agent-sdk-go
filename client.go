@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/M1n9X/claude-agent-sdk-go/internal"
-	"github.com/M1n9X/claude-agent-sdk-go/internal/log"
-	"github.com/M1n9X/claude-agent-sdk-go/internal/transport"
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal/log"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/internal/transport"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // Client provides bidirectional communication with Claude Code CLI for interactive sessions.

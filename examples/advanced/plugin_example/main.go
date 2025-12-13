@@ -6,8 +6,8 @@ import (
 	"log"
 	"path/filepath"
 
-	claude "github.com/M1n9X/claude-agent-sdk-go"
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	claude "github.com/andrewcarl-quilt/claude-agent-sdk-go"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // PluginExample demonstrates how to use plugins with the Claude Go SDK.
