@@ -1051,6 +1051,146 @@ func TestMaxBufferSizeOverride(t *testing.T) {
 	}
 }
 
+// TestSessionIDFlag verifies that the --session-id flag is correctly added to CLI args.
+func TestSessionIDFlag(t *testing.T) {
+	tests := []struct {
+		name            string
+		sessionID       *string
+		wantSessionFlag bool
+		wantSessionID   string
+	}{
+		{
+			name:            "with session ID",
+			sessionID:       stringPtr("test-session-123"),
+			wantSessionFlag: true,
+			wantSessionID:   "test-session-123",
+		},
+		{
+			name:            "without session ID",
+			sessionID:       nil,
+			wantSessionFlag: false,
+			wantSessionID:   "",
+		},
+		{
+			name:            "with empty session ID",
+			sessionID:       stringPtr(""),
+			wantSessionFlag: false,
+			wantSessionID:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create options with session ID
+			opts := types.NewClaudeAgentOptions()
+			if tt.sessionID != nil {
+				opts = opts.WithSessionID(*tt.sessionID)
+			}
+
+			logger := log.NewLogger(false)
+			transport := NewSubprocessCLITransport("/bin/echo", "", nil, logger, "", opts)
+
+			// Build command args (without actually connecting)
+			args := transport.buildCommandArgs()
+
+			// Convert to string for easier searching
+			argsStr := strings.Join(args, " ")
+			t.Logf("CLI args: %v", args)
+
+			// Check for --session-id flag
+			hasSessionFlag := contains(args, "--session-id")
+			if hasSessionFlag != tt.wantSessionFlag {
+				t.Errorf("--session-id flag present = %v, want %v\nArgs: %s", hasSessionFlag, tt.wantSessionFlag, argsStr)
+			}
+
+			// Check for session ID value if flag is expected
+			if tt.wantSessionFlag {
+				hasSessionID := contains(args, tt.wantSessionID)
+				if !hasSessionID {
+					t.Errorf("session ID %q not found in args: %v", tt.wantSessionID, args)
+				}
+			}
+		})
+	}
+}
+
+// stringPtr returns a pointer to a string
+func stringPtr(s string) *string {
+	return &s
+}
+
+// TestSessionIDAndResumeMutualExclusivity verifies that --session-id and --resume are mutually exclusive.
+func TestSessionIDAndResumeMutualExclusivity(t *testing.T) {
+	tests := []struct {
+		name              string
+		sessionID         *string
+		resumeSessionID   string
+		wantSessionIDFlag bool
+		wantResumeFlag    bool
+	}{
+		{
+			name:              "session ID only (no resume)",
+			sessionID:         stringPtr("new-session-123"),
+			resumeSessionID:   "",
+			wantSessionIDFlag: true,
+			wantResumeFlag:    false,
+		},
+		{
+			name:              "resume only (no session ID)",
+			sessionID:         nil,
+			resumeSessionID:   "existing-session-456",
+			wantSessionIDFlag: false,
+			wantResumeFlag:    true,
+		},
+		{
+			name:              "resume takes precedence over session ID",
+			sessionID:         stringPtr("new-session-123"),
+			resumeSessionID:   "existing-session-456",
+			wantSessionIDFlag: false,
+			wantResumeFlag:    true,
+		},
+		{
+			name:              "neither set",
+			sessionID:         nil,
+			resumeSessionID:   "",
+			wantSessionIDFlag: false,
+			wantResumeFlag:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := types.NewClaudeAgentOptions()
+			if tt.sessionID != nil {
+				opts = opts.WithSessionID(*tt.sessionID)
+			}
+
+			logger := log.NewLogger(false)
+			transport := NewSubprocessCLITransport("/bin/echo", "", nil, logger, tt.resumeSessionID, opts)
+
+			args := transport.buildCommandArgs()
+			argsStr := strings.Join(args, " ")
+			t.Logf("CLI args: %v", args)
+
+			hasSessionIDFlag := contains(args, "--session-id")
+			hasResumeFlag := contains(args, "--resume")
+
+			if hasSessionIDFlag != tt.wantSessionIDFlag {
+				t.Errorf("--session-id flag present = %v, want %v\nArgs: %s", hasSessionIDFlag, tt.wantSessionIDFlag, argsStr)
+			}
+
+			if hasResumeFlag != tt.wantResumeFlag {
+				t.Errorf("--resume flag present = %v, want %v\nArgs: %s", hasResumeFlag, tt.wantResumeFlag, argsStr)
+			}
+
+			// Ensure they are mutually exclusive
+			if hasSessionIDFlag && hasResumeFlag {
+				t.Errorf("Both --session-id and --resume flags present, should be mutually exclusive\nArgs: %s", argsStr)
+			}
+		})
+	}
+}
+
 // TestMCPServersStringPath ensures string-based MCP config paths are passed to the CLI.
 func TestMCPServersStringPath(t *testing.T) {
 	const configPath = "/tmp/mcp-config.json"
