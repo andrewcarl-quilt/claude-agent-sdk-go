@@ -109,6 +109,7 @@ type ClaudeAgentOptions struct {
 	// Session configuration
 	ContinueConversation bool    `json:"continue_conversation,omitempty"`
 	Resume               *string `json:"resume,omitempty"`
+	SessionID            *string `json:"session_id,omitempty"`    // Pre-set session ID for new conversations
 	ForkSession          bool    `json:"fork_session,omitempty"`
 
 	// Model and execution limits
@@ -229,6 +230,14 @@ func (o *ClaudeAgentOptions) WithContinueConversation(continue_ bool) *ClaudeAge
 // WithResume sets the session ID to resume.
 func (o *ClaudeAgentOptions) WithResume(sessionID string) *ClaudeAgentOptions {
 	o.Resume = &sessionID
+	return o
+}
+
+// WithSessionID sets a pre-determined session ID for a new conversation.
+// This allows you to specify the session ID upfront instead of waiting for Claude to generate one.
+// The session ID must be a valid UUID format.
+func (o *ClaudeAgentOptions) WithSessionID(sessionID string) *ClaudeAgentOptions {
+	o.SessionID = &sessionID
 	return o
 }
 

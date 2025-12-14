@@ -317,9 +317,14 @@ func (t *SubprocessCLITransport) buildCommandArgs() []string {
 	}
 
 	// Add --resume flag if resuming a conversation
+	// Note: --resume and --session-id are mutually exclusive
 	if t.resumeSessionID != "" {
 		args = append(args, "--resume", t.resumeSessionID)
 		t.logger.Debug("Resuming Claude CLI conversation with session ID: %s", t.resumeSessionID)
+	} else if t.options != nil && t.options.SessionID != nil && *t.options.SessionID != "" {
+		// Add --session-id flag only for new conversations (not when resuming)
+		args = append(args, "--session-id", *t.options.SessionID)
+		t.logger.Debug("Using pre-set session ID for new conversation: %s", *t.options.SessionID)
 	}
 
 	// Add --fork-session flag if forking a resumed session
