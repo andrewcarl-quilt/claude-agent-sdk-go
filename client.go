@@ -63,10 +63,73 @@ import (
 //	    // Process messages
 //	}
 //
-// Thread Safety:
+// # Thread Safety - Intentional Design Choice
 //
-// Client is not thread-safe. All methods should be called from the same goroutine,
-// or you must provide your own synchronization.
+// Client is intentionally NOT thread-safe. This is a deliberate design decision, not a bug.
+//
+// Why this design is better:
+//
+//  1. Session Semantics: Each Client represents a single conversational session with Claude.
+//     Sessions are inherently sequential - you ask a question, wait for the response, then
+//     ask the next question. Concurrent access to the same session violates this semantic model.
+//
+//  2. State Management: Client maintains stateful connection, query/response pairing, and
+//     session history. Allowing concurrent access would require complex state synchronization
+//     that adds overhead for the 99% case where it's not needed.
+//
+//  3. Performance: No mutex overhead for the common single-goroutine usage pattern.
+//     Most applications use one Client per conversation thread, making synchronization
+//     unnecessary overhead.
+//
+//  4. Python SDK Alignment: Matches the Python SDK's design (ClaudeSDKClient is also not
+//     thread-safe), ensuring consistent behavior across language implementations.
+//
+//  5. Clear Ownership: Forces clear ownership semantics - each goroutine owns its Client,
+//     preventing subtle bugs from shared mutable state.
+//
+// Recommended patterns:
+//
+//	Pattern 1 (Recommended): One Client per goroutine
+//	  Each goroutine creates and owns its own Client instance. This is the most efficient
+//	  and idiomatic Go pattern for concurrent operations.
+//
+//	  var wg sync.WaitGroup
+//	  for i := 0; i < 10; i++ {
+//	      wg.Add(1)
+//	      go func(id int) {
+//	          defer wg.Done()
+//	          client, _ := claude.NewClient(ctx, opts)
+//	          defer client.Close(ctx)
+//	          // Use client independently
+//	      }(i)
+//	  }
+//
+//	Pattern 2: Use ConcurrentClient wrapper
+//	  If you specifically need to share a single session across goroutines (rare),
+//	  use the ConcurrentClient wrapper which provides thread-safe access.
+//
+//	  client, _ := claude.NewConcurrentClient(ctx, opts)
+//	  defer client.Close(ctx)
+//	  // Safe to use from multiple goroutines
+//
+//	Pattern 3: Use Query() function
+//	  For one-shot queries without session state, use the Query() function which
+//	  is naturally concurrent-safe as each call creates its own connection.
+//
+//	  go claude.Query(ctx, "Task 1", opts)
+//	  go claude.Query(ctx, "Task 2", opts)
+//
+// When NOT to share a Client:
+//   - Independent tasks (use separate Clients)
+//   - Parallel processing (use separate Clients)
+//   - Different conversation contexts (use separate Clients)
+//
+// When sharing might make sense (use ConcurrentClient):
+//   - Multiple goroutines need to interact with the same conversation session
+//   - Shared session state is required (rare)
+//   - Connection reuse is critical (rare)
+//
+// See docs/concurrency-guide.md for detailed patterns and examples.
 type Client struct {
 	options   *types.ClaudeAgentOptions
 	transport transport.Transport
@@ -571,6 +634,29 @@ func (c *Client) Interrupt(ctx context.Context) error {
 	return nil
 }
 
+// RewindFiles rewinds tracked files to the state at the specified user message UUID.
+// Requires streaming mode connection and EnableFileCheckpointing option set when connecting.
+func (c *Client) RewindFiles(ctx context.Context, userMessageID string) error {
+	if userMessageID == "" {
+		return fmt.Errorf("userMessageID cannot be empty")
+	}
+
+	c.mu.Lock()
+	connected := c.connected
+	query := c.query
+	c.mu.Unlock()
+
+	if !connected || query == nil {
+		return types.NewCLIConnectionError("not connected - call Connect() first")
+	}
+
+	_, err := query.SendControlRequest(ctx, map[string]interface{}{
+		"subtype":         "rewind_files",
+		"user_message_id": userMessageID,
+	})
+	return err
+}
+
 // SetPermissionMode changes the permission mode for the current session.
 //
 // This method allows dynamically switching between permission modes during execution
@@ -603,40 +689,40 @@ func (c *Client) Interrupt(ctx context.Context) error {
 //
 // Example - Toggle between planning and coding:
 //
-//    ctx := context.Background()
+//	ctx := context.Background()
 //
-//    // Start in planning mode
-//    if err := client.SetPermissionMode(ctx, types.PermissionModePlan); err != nil {
-//        log.Fatal("Failed to set plan mode:", err)
-//    }
+//	// Start in planning mode
+//	if err := client.SetPermissionMode(ctx, types.PermissionModePlan); err != nil {
+//	    log.Fatal("Failed to set plan mode:", err)
+//	}
 //
-//    // Review changes
-//    if err := client.Query(ctx, "What changes would you make to optimize performance?"); err != nil {
-//        log.Fatal(err)
-//    }
+//	// Review changes
+//	if err := client.Query(ctx, "What changes would you make to optimize performance?"); err != nil {
+//	    log.Fatal(err)
+//	}
 //
-//    // Switch to acceptEdits for fast implementation
-//    if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
-//        log.Fatal("Failed to set acceptEdits mode:", err)
-//    }
+//	// Switch to acceptEdits for fast implementation
+//	if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
+//	    log.Fatal("Failed to set acceptEdits mode:", err)
+//	}
 //
-//    // Execute the changes
-//    if err := client.Query(ctx, "Implement those optimizations now"); err != nil {
-//        log.Fatal(err)
-//    }
+//	// Execute the changes
+//	if err := client.Query(ctx, "Implement those optimizations now"); err != nil {
+//	    log.Fatal(err)
+//	}
 //
 // Example - With timeout:
 //
-//    // Set timeout to prevent hanging
-//    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//    defer cancel()
+//	// Set timeout to prevent hanging
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer cancel()
 //
-//    if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
-//        if errors.Is(err, context.DeadlineExceeded) {
-//            log.Fatal("CLI took too long to respond")
-//        }
-//        log.Fatal("Failed to change mode:", err)
-//    }
+//	if err := client.SetPermissionMode(ctx, types.PermissionModeAcceptEdits); err != nil {
+//	    if errors.Is(err, context.DeadlineExceeded) {
+//	        log.Fatal("CLI took too long to respond")
+//	    }
+//	    log.Fatal("Failed to change mode:", err)
+//	}
 func (c *Client) SetPermissionMode(ctx context.Context, mode types.PermissionMode) error {
 	c.mu.Lock()
 	if !c.connected || c.query == nil {

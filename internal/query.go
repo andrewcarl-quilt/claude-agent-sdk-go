@@ -606,6 +606,11 @@ func (q *Query) sendControlRequest(ctx context.Context, request map[string]inter
 	}
 }
 
+// SendControlRequest exposes control requests to callers (streaming mode only).
+func (q *Query) SendControlRequest(ctx context.Context, request map[string]interface{}) (map[string]interface{}, error) {
+	return q.sendControlRequest(ctx, request)
+}
+
 // SetPermissionMode sends a set_permission_mode control request to the CLI.
 //
 // This method sends the control request and waits for acknowledgment from the CLI.
