@@ -98,5 +98,5 @@ This release achieves **100% feature parity** with the official Python SDK.
 - Environment variable configuration
 - Verbose logging
 
-[Unreleased]: https://github.com/M1n9X/claude-agent-sdk-go/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/M1n9X/claude-agent-sdk-go/releases/tag/v0.1.0
+[Unreleased]: https://github.com/andrewcarl-quilt/claude-agent-sdk-go/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/andrewcarl-quilt/claude-agent-sdk-go/releases/tag/v0.1.0

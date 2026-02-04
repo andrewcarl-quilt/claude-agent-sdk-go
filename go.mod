@@ -1,6 +1,6 @@
 module github.com/andrewcarl-quilt/claude-agent-sdk-go
 
-go 1.24.0
+go 1.23
 
 retract v0.2.0 // Accidentally published version
 

@@ -278,7 +278,7 @@ func TestToolBuilder(t *testing.T) {
 	}
 
 	// Verify required fields
-	required := schema["required"].([]interface{})
+	required := schema["required"].([]string)
 	if len(required) != 2 {
 		t.Errorf("Expected 2 required fields, got %d", len(required))
 	}
@@ -455,7 +455,11 @@ func TestToolManager(t *testing.T) {
 	}
 
 	// Verify server has both tools
-	toolList := server.Instance.(*mcp.SdkMCPServer).Tools()
+	// CreateServer returns Instance as []McpTool; it gets wrapped in SdkMCPServer during ConfigureMCPServers
+	toolList, ok := server.Instance.([]types.McpTool)
+	if !ok {
+		t.Fatalf("Expected Instance to be []types.McpTool, got: %T", server.Instance)
+	}
 	if len(toolList) != 2 {
 		t.Errorf("Expected 2 tools in server, got %d", len(toolList))
 	}

@@ -1,7 +1,7 @@
 # Claude Agent SDK for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/M1n9X/claude-agent-sdk-go.svg)](https://pkg.go.dev/github.com/M1n9X/claude-agent-sdk-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/M1n9X/claude-agent-sdk-go)](https://goreportcard.com/report/github.com/M1n9X/claude-agent-sdk-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/andrewcarl-quilt/claude-agent-sdk-go.svg)](https://pkg.go.dev/github.com/andrewcarl-quilt/claude-agent-sdk-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/andrewcarl-quilt/claude-agent-sdk-go)](https://goreportcard.com/report/github.com/andrewcarl-quilt/claude-agent-sdk-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python SDK Parity](https://img.shields.io/badge/Python%20SDK%20Parity-100%25-brightgreen)](docs/python-sdk-alignment.md)
 
@@ -38,7 +38,7 @@ The Claude Agent SDK for Go enables Go developers to easily integrate Claude AI 
 ## Installation
 
 ```bash
-go get github.com/M1n9X/claude-agent-sdk-go
+go get github.com/andrewcarl-quilt/claude-agent-sdk-go
 ```
 
 ## Prerequisites
@@ -58,8 +58,8 @@ import (
     "fmt"
     "log"
 
-    claude "github.com/M1n9X/claude-agent-sdk-go"
-    "github.com/M1n9X/claude-agent-sdk-go/types"
+    claude "github.com/andrewcarl-quilt/claude-agent-sdk-go"
+    "github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 func main() {
@@ -660,7 +660,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-If you encounter issues or have questions, please file an issue on the [GitHub repository](https://github.com/M1n9X/claude-agent-sdk-go).
+If you encounter issues or have questions, please file an issue on the [GitHub repository](https://github.com/andrewcarl-quilt/claude-agent-sdk-go).
 
 ## Acknowledgment
 

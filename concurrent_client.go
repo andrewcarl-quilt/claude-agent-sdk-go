@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/M1n9X/claude-agent-sdk-go/types"
+	"github.com/andrewcarl-quilt/claude-agent-sdk-go/types"
 )
 
 // ConcurrentClient is a thread-safe wrapper around Client.
