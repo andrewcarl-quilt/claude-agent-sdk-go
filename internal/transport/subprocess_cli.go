@@ -449,18 +449,18 @@ func (t *SubprocessCLITransport) buildCommandArgs() []string {
 		case map[string]interface{}:
 			if len(servers) > 0 {
 				if configFile := t.generateMcpConfigFile(); configFile != "" {
-					args = append(args, "--mcp-servers", configFile)
+					args = append(args, "--mcp-config", configFile)
 					t.logger.Debug("Setting MCP servers config: %s", configFile)
 				}
 			}
 		case string:
 			if strings.TrimSpace(servers) != "" {
-				args = append(args, "--mcp-servers", servers)
+				args = append(args, "--mcp-config", servers)
 				t.logger.Debug("Using MCP servers config path: %s", servers)
 			}
 		case *string:
 			if servers != nil && strings.TrimSpace(*servers) != "" {
-				args = append(args, "--mcp-servers", *servers)
+				args = append(args, "--mcp-config", *servers)
 				t.logger.Debug("Using MCP servers config path: %s", *servers)
 			}
 		}

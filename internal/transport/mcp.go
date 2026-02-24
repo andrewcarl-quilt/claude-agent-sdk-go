@@ -266,7 +266,7 @@ func BuildMcpCommand(baseCmd []string, options *types.ClaudeAgentOptions) ([]str
 	}
 
 	if configFile != "" {
-		cmd = append(cmd, "--mcp-servers", configFile)
+		cmd = append(cmd, "--mcp-config", configFile)
 	}
 
 	return cmd, nil

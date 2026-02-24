@@ -1203,7 +1203,7 @@ func TestMCPServersStringPath(t *testing.T) {
 
 	idx := -1
 	for i, arg := range args {
-		if arg == "--mcp-servers" {
+		if arg == "--mcp-config" {
 			idx = i
 			break
 		}
