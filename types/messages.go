@@ -523,6 +523,52 @@ func (m *StreamEvent) ShouldDisplayToUser() bool {
 
 func (m *StreamEvent) isMessage() {}
 
+// RateLimitStatus represents the status of a rate limit check.
+type RateLimitStatus string
+
+const (
+	RateLimitStatusAllowed        RateLimitStatus = "allowed"
+	RateLimitStatusAllowedWarning RateLimitStatus = "allowed_warning"
+	RateLimitStatusRejected       RateLimitStatus = "rejected"
+)
+
+// RateLimitInfo contains details about the rate limit state.
+type RateLimitInfo struct {
+	Status      RateLimitStatus `json:"status"`
+	ResetsAt    *float64        `json:"resetsAt,omitempty"`
+	Utilization *float64        `json:"utilization,omitempty"`
+}
+
+// RateLimitEvent represents a rate limit event emitted by the CLI.
+type RateLimitEvent struct {
+	Type          string        `json:"type"`
+	RateLimitInfo RateLimitInfo `json:"rate_limit_info"`
+	UUID          string        `json:"uuid"`
+	SessionID     string        `json:"session_id"`
+}
+
+// GetMessageType returns the type of the message.
+func (m *RateLimitEvent) GetMessageType() string {
+	return m.Type
+}
+
+// ShouldDisplayToUser returns false for rate limit events (metadata only).
+func (m *RateLimitEvent) ShouldDisplayToUser() bool {
+	return false
+}
+
+func (m *RateLimitEvent) isMessage() {}
+
+// AsRateLimitEvent provides type-safe accessor.
+func (m *RateLimitEvent) AsRateLimitEvent() (*RateLimitEvent, bool) {
+	return m, true
+}
+
+// AsType provides type-safe conversion to specific message types.
+func (m *RateLimitEvent) AsType() (user *UserMessage, assistant *AssistantMessage, system *SystemMessage, result *ResultMessage, streamEvent *StreamEvent, jsonMsg *JSONMessage) {
+	return nil, nil, nil, nil, nil, nil
+}
+
 // UnmarshalMessage unmarshals a JSON message into the appropriate message type.
 func UnmarshalMessage(data []byte) (Message, error) {
 	var typeCheck struct {
@@ -562,6 +608,12 @@ func UnmarshalMessage(data []byte) (Message, error) {
 		var msg StreamEvent
 		if err := json.Unmarshal(data, &msg); err != nil {
 			return nil, NewCLIJSONDecodeErrorWithCause("failed to unmarshal stream event", string(data), err)
+		}
+		return &msg, nil
+	case "rate_limit_event":
+		var msg RateLimitEvent
+		if err := json.Unmarshal(data, &msg); err != nil {
+			return nil, NewCLIJSONDecodeErrorWithCause("failed to unmarshal rate limit event", string(data), err)
 		}
 		return &msg, nil
 	default:
@@ -613,6 +665,14 @@ func AsStreamEvent(msg Message) (*StreamEvent, bool) {
 func AsJSON(msg Message) (*JSONMessage, bool) {
 	if jsonMsg, ok := msg.(*JSONMessage); ok {
 		return jsonMsg, true
+	}
+	return nil, false
+}
+
+// AsRateLimitEvent attempts to cast a Message to *RateLimitEvent, returning the message and success status.
+func AsRateLimitEvent(msg Message) (*RateLimitEvent, bool) {
+	if rateLimitMsg, ok := msg.(*RateLimitEvent); ok {
+		return rateLimitMsg, true
 	}
 	return nil, false
 }
