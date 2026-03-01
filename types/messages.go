@@ -312,11 +312,21 @@ func (m *UserMessage) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("content must be string or array of content blocks")
 }
 
+// TokenUsage represents per-turn token usage from the Claude API.
+type TokenUsage struct {
+	InputTokens              int `json:"input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+}
+
 // AssistantMessage represents a message from Claude assistant.
 type AssistantMessage struct {
 	Type            string                 `json:"type"`
+	MessageID       string                 `json:"-"` // From nested message.id (Claude CLI format)
 	Content         []ContentBlock         `json:"content"`
 	Model           string                 `json:"model"`
+	Usage           *TokenUsage            `json:"-"` // From nested message.usage (Claude CLI format)
 	ParentToolUseID *string                `json:"parent_tool_use_id,omitempty"`
 	Error           *AssistantMessageError `json:"error,omitempty"`
 }
@@ -371,6 +381,20 @@ func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(errRaw, &errCode); err == nil && errCode != "" {
 				code := AssistantMessageError(errCode)
 				m.Error = &code
+			}
+		}
+		// Extract message ID
+		if idRaw, ok := aux.Message["id"]; ok {
+			var id string
+			if err := json.Unmarshal(idRaw, &id); err == nil {
+				m.MessageID = id
+			}
+		}
+		// Extract per-turn token usage
+		if usageRaw, ok := aux.Message["usage"]; ok {
+			var usage TokenUsage
+			if err := json.Unmarshal(usageRaw, &usage); err == nil {
+				m.Usage = &usage
 			}
 		}
 	}
