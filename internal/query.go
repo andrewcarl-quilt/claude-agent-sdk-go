@@ -492,11 +492,18 @@ func (q *Query) handleHookCallback(requestData map[string]interface{}) (map[stri
 		return nil, err
 	}
 
-	// Convert hook output to response
-	// The callback should return a map[string]interface{} representing the hook output
+	// Convert hook output to response map.
+	// Accept map[string]interface{} directly, or JSON-serialize typed structs
+	// (e.g. *types.SyncHookJSONOutput, *types.PostCompactHookSpecificOutput).
 	response, ok := hookOutput.(map[string]interface{})
 	if !ok {
-		return nil, types.NewControlProtocolError("hook callback must return map[string]interface{}")
+		data, err := json.Marshal(hookOutput)
+		if err != nil {
+			return nil, types.NewControlProtocolError("hook callback returned non-serializable type")
+		}
+		if err := json.Unmarshal(data, &response); err != nil {
+			return nil, types.NewControlProtocolError("hook callback returned non-serializable type")
+		}
 	}
 
 	return response, nil
